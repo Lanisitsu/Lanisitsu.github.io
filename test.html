@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>TikTok Optimizer — TikQuick Style (file:// fix)</title>
+<style>
+:root{--bg:#0b0d12;--card:#141821;--card2:#1b202b;--text:#f5f7fb;--muted:#9da7b7;--accent:#ff3b81;--accent2:#7c5cff;--ok:#49d17d;--warn:#ffbd4a;--line:#2a3040}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#0b0d12,#171322);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:1100px;margin:auto;padding:22px 14px 45px}.hero{padding:18px 4px 20px}.hero h1{margin:0;font-size:clamp(26px,5.5vw,42px)}.hero p{color:var(--muted);margin:8px 0 0}
+.card{background:rgba(20,24,33,.94);border:1px solid var(--line);border-radius:18px;padding:16px;margin:12px 0;box-shadow:0 12px 35px #0005}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}@media(max-width:700px){.grid{grid-template-columns:1fr}}
+label{display:block;color:var(--muted);font-size:13px;margin-bottom:6px}select,input[type=range],button{width:100%}
+select{background:var(--card2);color:var(--text);border:1px solid var(--line);border-radius:11px;padding:11px}
+input[type=file]{width:100%;padding:13px;border:1px dashed #596174;border-radius:12px;background:#11151d;color:var(--text)}
+button{border:0;border-radius:12px;padding:13px 15px;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;font-weight:800;cursor:pointer}
+button:disabled{opacity:.45;cursor:not-allowed}.secondary{background:#252b38}.row{display:flex;gap:10px}.row>*{flex:1}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}@media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{background:#10141c;border:1px solid var(--line);border-radius:12px;padding:10px}.stat b{display:block;font-size:15px}.stat span{font-size:11px;color:var(--muted)}
+.videos{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:700px){.videos{grid-template-columns:1fr}}
+video{width:100%;background:#050608;border-radius:13px;max-height:480px}
+.badge{display:inline-block;padding:5px 8px;border-radius:999px;background:#282e3b;font-size:11px;margin:3px 4px 0 0}.ok{color:var(--ok)}.warn{color:var(--warn)}
+progress{width:100%;height:12px}.small{font-size:12px;color:var(--muted);line-height:1.5}.status{margin-top:9px;font-size:13px}
+details summary{cursor:pointer;font-weight:700}.hidden{display:none!important}
+footer{color:#737d8e;font-size:11px;text-align:center;margin-top:18px}
+.error{color:#ff6b6b;font-weight:600}
+.note{background:#1a2030;border-left:4px solid var(--accent);padding:10px 14px;margin:12px 0;border-radius:0 10px 10px 0;font-size:13px;line-height:1.45}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero">
+    <h1>🎬 TikTok Optimizer — TikQuick Style</h1>
+    <p>Matches TikQuick’s real limits (1080p cap, 60 fps max, size budget). Fixed for file://</p>
+  </section>
+
+  <div class="card">
+    <div class="note">
+      <strong>TikQuick-style rules:</strong><br>
+      • Short edge &gt; 1440 → force 1080p<br>
+      • FPS &gt; 120 → force 60 fps<br>
+      • Target size/bitrate from duration budget<br>
+      • Works better when opened via local server, but this version also tries hard to work on file://
+    </div>
+  </div>
+
+  <div class="card">
+    <label>1. Choose your video</label>
+    <input id="file" type="file" accept="video/*">
+    <div id="sourceInfo" class="hidden" style="margin-top:12px">
+      <div class="stats">
+        <div class="stat"><span>Resolution</span><b id="sRes">—</b></div>
+        <div class="stat"><span>FPS</span><b id="sFps">—</b></div>
+        <div class="stat"><span>Est. bitrate</span><b id="sBit">—</b></div>
+        <div class="stat"><span>Duration</span><b id="sDur">—</b></div>
+      </div>
+      <div id="badges"></div>
+      <p id="analysisNote" class="small" style="margin-top:10px"></p>
+    </div>
+  </div>
+
+  <div class="card">
+    <label>Quick preset</label>
+    <div class="row">
+      <select id="preset">
+        <option value="tikquick">TikQuick Style (default)</option>
+        <option value="safe">Higher Quality</option>
+        <option value="custom">Custom</option>
+      </select>
+      <button id="applyPreset" class="secondary">Apply</button>
+    </div>
+  </div>
+
+  <div class="card">
+    **Summary:**
+Output settings
+      <div class="grid" style="margin-top:13px">
+        <div>
+          <label>Resolution</label>
+          <select id="res">
+            <option value="auto">Auto (TikQuick rules)</option>
+            <option value="1080">Force 1080p</option>
+            <option value="source">Keep source</option>
+          </select>
+        </div>
+        <div>
+          <label>Aspect</label>
+          <select id="aspect">
+            <option value="vertical">9:16 vertical</option>
+            <option value="source">Keep source</option>
+          </select>
+        </div>
+        <div>
+          <label>Frame rate</label>
+          <select id="fps">
+            <option value="auto">Auto (TikQuick rules)</option>
+            <option value="60">Force 60</option>
+            <option value="30">Force 30</option>
+            <option value="source">Keep source</option>
+          </select>
+        </div>
+        <div>
+          <label>Encoding speed</label>
+          <select id="speed">
+            <option value="superfast">Superfast (TikQuick)</option>
+            <option value="veryfast">Very fast</option>
+            <option value="faster">Faster</option>
+            <option value="medium" selected>Medium (better quality)</option>
+            <option value="slow">Slow</option>
+          </select>
+        </div>
+        <div>
+          <label>Audio</label>
+          <select id="audio">
+            <option value="128k">AAC 128 kbps (TikQuick)</option>
+            <option value="192k">AAC 192 kbps</option>
+            <option value="256k">AAC 256 kbps</option>
+          </select>
+        </div>
+        <div>
+          <label>Bitrate mode</label>
+          <select id="bitrateMode">
+            <option value="tikquick">TikQuick size budget</option>
+            <option value="high">Higher quality</option>
+            <option value="crf">CRF quality</option>
+          </select>
+        </div>
+        <div>
+          <label>CRF (CRF mode): <span id="crfVal">18</span></label>
+          <input id="crf" type="range" min="14" max="26" value="18">
+        </div>
+      </div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <button id="process" disabled>⚙️ Process Video</button>
+      <button id="cancel" class="secondary" disabled>Cancel</button>
+    </div>
+    <div style="margin-top:12px"><progress id="prog" value="0" max="100"></progress></div>
+    <div id="status" class="status">Load a video to begin.</div>
+  </div>
+
+  <div id="resultCard" class="card hidden">
+    <h3 style="margin-top:0">Before / After</h3>
+    <div class="videos">
+      <div><label>Original</label><video id="before" controls playsinline></video></div>
+      <div><label>Processed</label><video id="after" controls playsinline></video></div>
+    </div>
+    <div class="stats" style="margin-top:12px">
+      <div class="stat"><span>Output</span><b id="oRes">—</b></div>
+      <div class="stat"><span>FPS</span><b id="oFps">—</b></div>
+      <div class="stat"><span>File size</span><b id="oSize">—</b></div>
+      <div class="stat"><span>Est. bitrate</span><b id="oBit">—</b></div>
+    </div>
+    <p id="resultNote" class="small"></p>
+    <button id="download" style="margin-top:10px">⬇️ Download Optimized MP4</button>
+  </div>
+
+  <footer>Local FFmpeg.wasm • TikQuick-style rules + file:// worker fix</footer>
+</div>
+
+<script type="module">
+import { FFmpeg } from "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/esm/index.js";
+import { fetchFile, toBlobURL } from "https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.2/dist/esm/index.js";
+
+const $ = id => document.getElementById(id);
+const ffmpeg = new FFmpeg();
+let loaded = false, inputFile = null, outputBlob = null, outputURL = null;
+let source = { w:0, h:0, duration:0, fps:0, bitrate:0, size:0 };
+
+function tikquickSizeBudget(durationSec) {
+  if (durationSec < 20) return 32505856;
+  if (durationSec < 60) return 53477376;
+  if (durationSec < 120) return 95420416;
+  return 126877696;
+}
+
+function fmtBytes(n) {
+  if (!n) return "—";
+  const u = ["B","KB","MB","GB"];
+  let i = 0;
+  while (n >= 1024 && i < 3) { n /= 1024; i++; }
+  return n.toFixed(i ? 1 : 0) + " " + u[i];
+}
+function fmtBit(n) { return n ? (n / 1e6).toFixed(2) + " Mbps" : "—"; }
+function fmtTime(s) {
+  if (!s || !isFinite(s)) return "—";
+  const m = Math.floor(s / 60);
+  const sec = Math.round(s % 60);
+  return m + ":" + String(sec).padStart(2, "0");
+}
+
+function approxFPS(video) {
+  return new Promise(resolve => {
+    let times = [], start = performance.now(), last = null, done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      if (times.length < 5) { resolve(0); return; }
+      const ds = times.slice(1).map((x, i) => x - times[i]).filter(x => x > 0 && x < 1);
+      ds.sort((a, b) => a - b);
+      const med = ds[Math.floor(ds.length / 2)];
+      resolve(med ? 1 / med : 0);
+    };
+    const cb = (now, meta) => {
+      if (last !== null && meta.mediaTime !== undefined && meta.mediaTime !== last)
+        times.push(meta.mediaTime - last);
+      last = meta.mediaTime;
+      if (performance.now() - start < 1800 && !done) video.requestVideoFrameCallback(cb);
+      else finish();
+    };
+    if ("requestVideoFrameCallback" in HTMLVideoElement.prototype)
+      video.requestVideoFrameCallback(cb);
+    else resolve(0);
+    setTimeout(finish, 2300);
+  });
+}
+
+function setStatus(t, isError = false) {
+  $("status").textContent = t;
+  $("status").className = "status" + (isError ? " error" : "");
+}
+function addBadge(t, cls = "") {
+  const s = document.createElement("span");
+  s.className = "badge " + cls;
+  s.textContent = t;
+  $("badges").appendChild(s);
+}
+function clearBadges() { $("badges").innerHTML = ""; }
+
+async function loadFFmpeg() {
+  if (loaded) return;
+  setStatus("Loading FFmpeg.wasm (this can take 20–50 s the first time)…");
+
+  const coreBase = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm";
+  const ffmpegBase = "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/esm";
+
+  try {
+    // Critical for file:// compatibility: turn worker.js into a Blob URL
+    const workerURL = await toBlobURL(
+      ffmpegBase + "/worker.js",
+      "text/javascript"
+    );
+
+    await ffmpeg.load({
+      coreURL: await toBlobURL(coreBase + "/ffmpeg-core.js", "text/javascript"),
+      wasmURL: await toBlobURL(coreBase + "/ffmpeg-core.wasm", "application/wasm"),
+      workerURL
+    });
+
+    loaded = true;
+    setStatus("FFmpeg ready. You can process videos now.");
+  } catch (err) {
+    console.error(err);
+    setStatus(
+      "FFmpeg failed to load. " +
+      "Best solution: open this page with a local server " +
+      "(VS Code Live Server, or run: python -m http.server). " +
+      "Error: " + (err?.message || err),
+      true
+    );
+    throw err;
+  }
+}
+
+ffmpeg.on("progress", ({ progress }) => {
+  $("prog").value = Math.max(0, Math.min(100, progress * 100));
+});
+
+$("crf").oninput = () => { $("crfVal").textContent = $("crf").value; };
+
+$("file").onchange = async e => {
+  const file = e.target.files?.[0];
+  clearBadges();
+  $("resultCard").classList.add("hidden");
+  $("process").disabled = true;
+  inputFile = null;
+  $("analysisNote").textContent = "";
+
+  if (!file) {
+    setStatus("No file selected.", true);
+    return;
+  }
+
+  inputFile = file;
+  setStatus("Reading video metadata…");
+
+  try {
+    const url = URL.createObjectURL(file);
+    $("before").src = url;
+
+    await new Promise((resolve, reject) => {
+      $("before").onloadedmetadata = resolve;
+      $("before").onerror = () => reject(new Error("Browser cannot decode this video."));
+      setTimeout(() => reject(new Error("Timeout reading metadata.")), 15000);
+    });
+
+    source.w = $("before").videoWidth || 0;
+    source.h = $("before").videoHeight || 0;
+    source.duration = $("before").duration || 0;
+    source.size = file.size;
+    source.bitrate = source.duration ? file.size * 8 / source.duration : 0;
+    source.fps = await approxFPS($("before"));
+
+    if (!source.w || !source.h) throw new Error("Could not read resolution.");
+
+    $("sRes").textContent = source.w + " × " + source.h;
+    $("sFps").textContent = source.fps ? source.fps.toFixed(2) + " (est.)" : "Unknown";
+    $("sBit").textContent = fmtBit(source.bitrate);
+    $("sDur").textContent = fmtTime(source.duration);
+
+    const shortEdge = Math.min(source.w, source.h);
+    const needsScale = shortEdge > 1440;
+    const needsFpsCap = source.fps > 120;
+    const budget = tikquickSizeBudget(source.duration);
+    const overSize = source.size > budget;
+
+    clearBadges();
+    if (needsScale) addBadge("Will downscale → 1080p", "warn");
+    else addBadge("Resolution OK", "ok");
+    if (needsFpsCap) addBadge("Will cap FPS → 60", "warn");
+    else if (source.fps >= 50) addBadge("High FPS source", "ok");
+    if (overSize) addBadge("Over size budget", "warn");
+    else addBadge("Size within budget", "ok");
+
+    let note = "TikQuick rules: ";
+    const actions = [];
+    if (needsScale) actions.push("scale to 1080p");
+    if (needsFpsCap) actions.push("cap at 60 fps");
+    if (overSize || needsScale || needsFpsCap) actions.push("re-encode");
+    note += actions.length ? actions.join(" + ") : "no heavy processing needed";
+    $("analysisNote").textContent = note;
+
+    $("sourceInfo").classList.remove("hidden");
+    $("process").disabled = false;
+    setStatus("Video loaded. Ready.");
+  } catch (err) {
+    console.error(err);
+    setStatus("Cannot read this video: " + (err.message || err), true);
+    $("sourceInfo").classList.add("hidden");
+    $("process").disabled = true;
+    inputFile = null;
+  }
+};
+
+$("applyPreset").onclick = () => {
+  const p = $("preset").value;
+  if (p === "tikquick") {
+    $("res").value = "auto";
+    $("aspect").value = "vertical";
+    $("fps").value = "auto";
+    $("speed").value = "superfast";
+    $("audio").value = "128k";
+    $("bitrateMode").value = "tikquick";
+  }
+  if (p === "safe") {
+    $("res").value = "1080";
+    $("aspect").value = "vertical";
+    $("fps").value = "30";
+    $("speed").value = "medium";
+    $("audio").value = "256k";
+    $("bitrateMode").value = "high";
+  }
+};
+$("applyPreset").click();
+
+function getTargetDims() {
+  let w = source.w, h = source.h;
+  const mode = $("res").value;
+
+  if (mode === "auto") {
+    const short = Math.min(w, h);
+    if (short > 1440) {
+      if (w >= h) {
+        h = 1080;
+        w = Math.round(1080 * source.w / source.h);
+      } else {
+        w = 1080;
+        h = Math.round(1080 * source.h / source.w);
+      }
+    }
+  } else if (mode === "1080") {
+    if (w >= h) {
+      h = 1080;
+      w = Math.round(1080 * source.w / source.h);
+    } else {
+      w = 1080;
+      h = Math.round(1080 * source.h / source.w);
+    }
+  }
+
+  if ($("aspect").value === "vertical") {
+    const H = 1920;
+    const W = Math.round(H * 9 / 16);
+    w = W; h = H;
+  }
+
+  w = Math.max(2, Math.round(w / 2) * 2);
+  h = Math.max(2, Math.round(h / 2) * 2);
+  return [w, h];
+}
+
+function getTargetFps() {
+  const mode = $("fps").value;
+  if (mode === "auto") {
+    if (source.fps > 120) return 60;
+    if (source.fps > 0) return Math.min(60, Math.round(source.fps));
+    return 30;
+  }
+  if (mode === "source") return source.fps > 0 ? Math.round(source.fps) : 30;
+  return +mode;
+}
+
+$("process").onclick = async () => {
+  if (!inputFile || !source.w) {
+    setStatus("Load a valid video first.", true);
+    return;
+  }
+
+  $("process").disabled = true;
+  $("cancel").disabled = false;
+  $("prog").value = 0;
+
+  try {
+    await loadFFmpeg();
+    setStatus("Preparing…");
+
+    const ext = (inputFile.name.split(".").pop() || "mp4").replace(/[^a-z0-9]/gi, "") || "mp4";
+    const inName = "input." + ext;
+    const outName = "tikquick_style.mp4";
+
+    await ffmpeg.writeFile(inName, await fetchFile(inputFile));
+
+    const [tw, th] = getTargetDims();
+    const targetFps = getTargetFps();
+    const args = ["-hide_banner", "-y", "-i", inName];
+
+    if (tw !== source.w || th !== source.h) {
+      if ($("aspect").value === "vertical") {
+        args.push("-vf", `scale=\( {tw}: \){th}:force_original_aspect_ratio=increase,crop=\( {tw}: \){th}`);
+      } else {
+        args.push("-vf", `scale=\( {tw}: \){th}:force_original_aspect_ratio=decrease`);
+      }
+    }
+
+    args.push("-r", String(targetFps));
+    args.push("-c:v", "libx264", "-profile:v", "high");
+    args.push("-preset", $("speed").value);
+
+    const mode = $("bitrateMode").value;
+    if (mode === "tikquick") {
+      const budget = tikquickSizeBudget(source.duration);
+      const targetVideoBitrate = Math.max(500000, Math.floor((budget * 8 / source.duration) - 128000));
+      args.push(
+        "-b:v", String(targetVideoBitrate),
+        "-maxrate", String(Math.floor(targetVideoBitrate * 1.5)),
+        "-bufsize", String(Math.floor(targetVideoBitrate * 2))
+      );
+    } else if (mode === "high") {
+      const b = Math.max(10e6, Math.min(16e6, source.bitrate || 12e6));
+      args.push("-b:v", String(Math.round(b)), "-maxrate", String(Math.round(b * 1.2)), "-bufsize", String(Math.round(b * 2)));
+    } else {
+      args.push("-crf", $("crf").value);
+    }
+
+    args.push("-pix_fmt", "yuv420p");
+    args.push("-c:a", "aac", "-b:a", $("audio").value, "-ar", "48000");
+    args.push("-movflags", "+faststart");
+    args.push("-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-color_range", "tv");
+    args.push(outName);
+
+    setStatus("Encoding… keep the tab open.");
+    console.log("FFmpeg args:", args.join(" "));
+
+    await ffmpeg.exec(args);
+
+    const data = await ffmpeg.readFile(outName);
+    outputBlob = new Blob([data.buffer], { type: "video/mp4" });
+    if (outputURL) URL.revokeObjectURL(outputURL);
+    outputURL = URL.createObjectURL(outputBlob);
+
+    $("after").src = outputURL;
+    await new Promise(r => $("after").onloadedmetadata = r);
+
+    const ow = $("after").videoWidth, oh = $("after").videoHeight, od = $("after").duration;
+    const ob = od ? outputBlob.size * 8 / od : 0;
+
+    $("oRes").textContent = ow + " × " + oh;
+    $("oFps").textContent = targetFps + " FPS";
+    $("oSize").textContent = fmtBytes(outputBlob.size);
+    $("oBit").textContent = fmtBit(ob);
+
+    $("resultNote").innerHTML = `
+      Processed with TikQuick-style rules (1080p cap, 60 fps max, size budget).<br>
+      Upload to TikTok Studio or enable “Allow high-quality uploads” in the app.
+    `;
+    $("resultCard").classList.remove("hidden");
+
+    $("download").onclick = () => {
+      const a = document.createElement("a");
+      a.href = outputURL;
+      a.download = "tikquick_style.mp4";
+      a.click();
+    };
+
+    setStatus("Done. Download and upload.");
+  } catch (err) {
+    console.error(err);
+    const msg = String(err?.message || err);
+    if (/Worker|origin 'null'|SharedArrayBuffer|worker\.js/i.test(msg)) {
+      setStatus("Worker still failed. Please open the page with a local server (recommended): python -m http.server  or VS Code Live Server.", true);
+    } else {
+      setStatus("Processing failed: " + msg, true);
+    }
+  } finally {
+    $("process").disabled = false;
+    $("cancel").disabled = true;
+  }
+};
+
+$("cancel").onclick = () => {
+  setStatus("Cancel requested. Reload the page if encoding continues.");
+};
+</script>
+</body>
+</html>
